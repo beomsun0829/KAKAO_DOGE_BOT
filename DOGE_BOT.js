@@ -106,7 +106,7 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         replier.reply(ans);
     }
     
-    if (msg == ">날씨") {
+    if (dict_cmd[msg] == ">날씨") {
         var data = org.jsoup.Jsoup.connect("https://m.search.naver.com/search.naver?query=날씨").get();
         data = data.select("div.lcl_lst").get(0);
         data = data.select("a");
@@ -212,6 +212,7 @@ function dict_init(dict_nat, dict_cmd, dict_inc){
     dict_cmd['>영한'] = '>영한 (번역할 문장)';
     dict_cmd['>한일'] = '>한일 (번역할 문장)';
     dict_cmd['>일한'] = '>일한 (번역할 문장)';
+    dict_cmd['>날씨'] = dict_cmd['>weather'] = dict_cmd['>전국날씨'] = '>날씨';
 
 
 
