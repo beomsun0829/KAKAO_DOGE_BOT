@@ -22,6 +22,7 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
     /*   단순 명령어   */
 
 
+
     /*   봇 정보   */
     if(dict_cmd[msg] == '>info'){               
         var info_msg_sender = "";
@@ -59,6 +60,7 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         replier.reply(info_msg_sender);
     }
 
+
     /*   명령어 목록   */
     if(dict_cmd[msg] == '>help'){                 
 
@@ -84,6 +86,7 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         );
     }
 
+
     /*   현재시간   */
     if(dict_cmd[msg] == '>time'){                 
         var day = new Date();
@@ -105,7 +108,9 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         ans += Math.ceil(msec/1000) + "초남음 ㅋㅋㅅㅂ";
         replier.reply(ans);
     }
+
     
+    /*   날씨   */
     if (dict_cmd[msg] == ">날씨") {
         var data = org.jsoup.Jsoup.connect("https://m.search.naver.com/search.naver?query=날씨").get();
         data = data.select("div.lcl_lst").get(0);
@@ -117,6 +122,8 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         replier.reply("[전국 날씨 정보]\n\n" + result.join("\n").replace(/도씨/g, "℃"));
     }
 
+
+
     /*   단순 명령어 종료   */
 
 
@@ -125,14 +132,14 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
 
     
     /*   혼합 명령어   */
+
+
     /*   메세지 자르기   */
-    
     splited_msg = msg.split(" ");
     splited_data = msg.replace(splited_msg[0] + " ","");
     splited_data_chk = msg.trim();
 
     /*   번역   */
-
     if(splited_msg[0] == ">영한" || splited_msg[0] == ">한영" || splited_msg[0] == ">한일" || splited_msg[0] == ">일한"){
     
         if(splited_data_chk == ">한영" || splited_data_chk == ">영한" || splited_data_chk == ">한일" || splited_data_chk == ">일한"){
@@ -185,6 +192,7 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         replier.reply(dict_nat[msg]);
     }
 
+    
      /*   자연어 종료   */
 
 
@@ -277,7 +285,9 @@ function err_func(err_code){
 /* 추가해야될 목록
 
 
-코인정보들
+코인정보
+주식정보
+네이버검색
 
 
 
