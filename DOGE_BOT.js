@@ -141,7 +141,6 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
 
     /*   번역   */
     if(splited_msg[0] == ">영한" || splited_msg[0] == ">한영" || splited_msg[0] == ">한일" || splited_msg[0] == ">일한"){
-    
         if(splited_data_chk == ">한영" || splited_data_chk == ">영한" || splited_data_chk == ">한일" || splited_data_chk == ">일한"){
             replier.reply(err_func(2));
         }
@@ -166,7 +165,68 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
             replier.reply("ko->ja : " + papago_Api_Tr_result);
         }
     }
+
+
+    /*   검색   */
+    if(splited_msg[0] == ">네이버"){
+        if(splited_data_chk == ">검색" || splited_data_chk == ">search" || splited_data_chk == ">네이버검색" || splited_data_chk == ">naver" || splited_data_chk == ">네이버"){
+            replier.reply(err_func(3));
+        }
+        else{
+            replier.reply("네이버 검색 : https://m.search.naver.com/search.naver?query=" + splited_data.replace(/ /g, "%20"));
+        }
+        
+    }
     
+    else if(splited_msg[0] == ">구글"){
+        if(splited_data_chk == ">구글검색" || splited_data_chk == ">google"){
+            replier.reply(err_func(3));
+        }
+        else{
+            replier.reply("구글 검색 : https://www.google.com/search?q=" + splited_data.replace(/ /g, "%20"));
+        }
+        
+    }
+
+
+    
+    /*
+    if(splited_msg[0] == ">코인"){
+        const http = require('https'); // http 모듈 불러오기
+        var binance_basic_url = 'https://www.binance.com'; // 긁어오고 싶은 주소를 입력.
+        var binance_query = '/api/v3/ticker/price';
+        binance_query += '?symbol=';
+        var user_input_query = splited_data;
+        var binance_comp_url = binance_basic_url + binance_query + user_input_query;
+        let binance_rawdata = '';
+
+        http.get(binance_comp_url, stream => {
+            stream.setEncoding('utf8');
+            stream.on('data', buffer => binance_rawdata += buffer);
+            stream.on('end', function() {
+
+                binance_rawdata = binance_rawdata.replace(/symbol/g , "");
+                binance_rawdata = binance_rawdata.replace(/price/g , "");
+                binance_rawdata = binance_rawdata.replace(/},{/g, "\n");
+                binance_rawdata = binance_rawdata.replace(/\"/g, "");
+                binance_rawdata = binance_rawdata.replace(/\{/g, "");
+                binance_rawdata = binance_rawdata.replace(/\}/g, "");
+                binance_rawdata = binance_rawdata.replace(/\[/g, "");
+                binance_rawdata = binance_rawdata.replace(/\]/g, "");
+                binance_rawdata = binance_rawdata.replace(/:/g, "");
+                binance_rawdata = binance_rawdata.replace(/,/g, " : ");
+
+
+                replier.reply(binance_rawdata + "$"); // 긁어온 내용 뿌리기
+
+            });
+        });
+        
+    }
+
+    */
+
+
 
 
     /*   혼합 명령어 종료   */
@@ -216,11 +276,18 @@ function dict_init(dict_nat, dict_cmd, dict_inc){
     dict_cmd['>help'] = dict_cmd['>도움'] = dict_cmd['>명령어'] = '>help';
     dict_cmd['>time'] = dict_cmd['>시간'] = dict_cmd['>현재시간'] = dict_cmd['>현재시각'] = '>time';
     dict_cmd['>전역일'] = dict_cmd['>전역'] = '>전역';
+    dict_cmd['>날씨'] = dict_cmd['>weather'] = dict_cmd['>전국날씨'] = '>날씨';
+
+
+
+    /*   혼합 명령어 저장부   */
+
     dict_cmd['>한영'] = '>한영 (번역할 문장)';
     dict_cmd['>영한'] = '>영한 (번역할 문장)';
     dict_cmd['>한일'] = '>한일 (번역할 문장)';
     dict_cmd['>일한'] = '>일한 (번역할 문장)';
-    dict_cmd['>날씨'] = dict_cmd['>weather'] = dict_cmd['>전국날씨'] = '>날씨';
+    dict_cmd['>검색'] = dict_cmd['>search'] = dict_cmd['>네이버검색'] = dict_cmd['>naver'] = dict_cmd['>네이버'] = '>네이버 (검색할 문장)';
+    dict_cmd['>구글검색'] = dict_cmd['>google'] = dict_cmd['>구글'] = '>구글 (검색할 문장)';
 
 
 
@@ -232,12 +299,13 @@ function dict_init(dict_nat, dict_cmd, dict_inc){
     dict_nat['예아'] = dict_nat['ㅖㅏ'] = '안될거 뭐있노~';
 
 
+
     /*   포함된 자연어 저장부   */
     
     dict_inc['우흥'] = '우흥~';
     dict_inc['도지'] = '화성 갈끄니까~';
     dict_inc['모잠비크'] = '모잠비크 히야';
-    dict_nat['타이완'] = '따이완 넘버원~';
+    dict_inc['타이완'] = '따이완 넘버원~';
 
 }
 
@@ -266,7 +334,7 @@ function err_func(err_code){
             break;
 
         case 3:
-            ret_str += "검색할 회사 이름을 빈칸을 띄우고 입력해주세요";
+            ret_str += "검색할 내용을 빈칸을 띄우고 입력해주세요";
             break;
     
     }
@@ -287,8 +355,10 @@ function err_func(err_code){
 
 코인정보
 주식정보
-네이버검색
-
+랜덤으로 골라주기
+유튜브 검색기능
+try/catch로 오류코드
+명령어 목록 개인톡으로
 
 
 */
