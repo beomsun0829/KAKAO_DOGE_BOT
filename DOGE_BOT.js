@@ -1,8 +1,6 @@
 
-
 /*   선언   */
-
-let doge_bot_ver = "1.22";
+let doge_bot_ver = "1.3";
 let output_text = "";
 
 let now;
@@ -42,26 +40,35 @@ dict_init(dict_nat, dict_cmd, dict_inc);
 
 
 function response(room, msg, sender, isGroupChat, replier, imageDB, packageName) {
+    
+    replier.markAsRead();
+
     try{
 
         /*   초기화 섹션   */
         initialize();
+        
+        
+        /*   메세지 자르기   */
+        
+        str_split_Arr = [];
+        splited_msg = msg.split(" ");
+        splited_data = msg.replace(splited_msg[0] + " ","");
+        str_split_Arr = msg.split(" ");
+
 
         
         /*   단순 명령어   */
 
-
+        
         /*   테스터   */
-        
+
 
         
-        if(dict_cmd[msg] == "/test"){   
+        if(dict_cmd[msg] == "/test"){
 
-            let scolkg_data = org.jsoup.Jsoup.connect("https://scolkg.com/").get();
-            let kimp_per_div = scolkg_data.select("div.sectionKrw").get(0);
-            let kimp_per_span = kimp_per_div.select("span");
 
-            replier.reply(kimp_per_span);
+
 
         }
 
@@ -224,29 +231,45 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
             replier.reply(recompile_bot_func());
         }
 
-        
+        /*   코로나   */
         if(dict_cmd[msg] == "/코로나"){
-            let corona_webtext = Utils.getWebText("https://www.ytn.co.kr/");
+            let corona_data = org.jsoup.Jsoup.connect("https://search.naver.com/search.naver?query=코로나").get();
+            let status_corona_data = corona_data.select("div.status_info");
+            let status_corona_data_01 = status_corona_data.select("li.info_01").select("p.info_num").get(0).text();
+            let status_corona_data_01_var = status_corona_data.select("li.info_01").select("em.info_variation").get(0).text();
+            let status_corona_data_02 = status_corona_data.select("li.info_02").select("p.info_num").get(0).text();
+            let status_corona_data_02_var = status_corona_data.select("li.info_02").select("em.info_variation").get(0).text();
+            let status_corona_data_03 = status_corona_data.select("li.info_03").select("p.info_num").get(0).text();
+            let status_corona_data_03_var = status_corona_data.select("li.info_03").select("em.info_variation").get(0).text();
+            let status_corona_data_04 = status_corona_data.select("li.info_04").select("p.info_num").get(0).text();
+            let status_corona_data_04_var = status_corona_data.select("li.info_04").select("em.info_variation").get(0).text();
+
+            output_text += "확진환자 : " + status_corona_data_01 + " (+" + status_corona_data_01_var + ")" + "\n";
+            output_text += "격리해제 : " + status_corona_data_02 + " (+" + status_corona_data_02_var + ")" + "\n";
+            output_text += "사망자 : " + status_corona_data_03 + " (+" + status_corona_data_03_var + ")" + "\n";
+            output_text += "검사진행 : " + status_corona_data_04 + " (+" + status_corona_data_04_var + ")" + "\n\n";
             
-            let corona_data1 = corona_webtext;
-            corona_data1 = corona_data1.replace(/<[^>]+>/g,"");
-            corona_data1 = corona_data1.split("확진")[1];
-            corona_data1 = corona_data1.split("명")[0];
-            corona_data1 = corona_data1.trim();
+            let today_corona_data = corona_data.select("div.status_today").get(0);
+            let today_corona_data_01 = today_corona_data.select("li.info_02").select("em.info_num").get(0).text();
+            let today_corona_data_02 = today_corona_data.select("li.info_03").select("em.info_num").get(0).text();
 
-            let corona_data2 = corona_webtext;
-            corona_data2 = corona_data2.replace(/<[^>]+>/g,"");
-            corona_data2 = corona_data2.split("완치")[1];
-            corona_data2 = corona_data2.split("명")[0];
-            corona_data2 = corona_data2.trim();
+            output_text += "일일 확진자 수 : " + (parseInt(today_corona_data_01) + parseInt(today_corona_data_02)) + "\n";
+            output_text += "국내 발생 : " + today_corona_data_01 + "\n";
+            output_text += "해외 유입 : " + today_corona_data_02;
 
-            let corona_data3 = corona_webtext;
-            corona_data3 = corona_data3.replace(/<[^>]+>/g,""); corona_data3 = corona_data3.split("사망")[1];
-            corona_data3 = corona_data3.split("명")[0];
-            corona_data3 = corona_data3.trim();
-
-            replier.reply("코로나19 국내현황(전체기간)\n\n확진 : "+corona_data1+"명\n완치 : "+corona_data2+"명\n사망 : "+corona_data3+"명");
+            replier.reply(output_text);
         }
+
+
+        /*   비트코인 가격   */
+        if(dict_cmd[msg] == "/btckrw"){
+            let google_coin_search = org.jsoup.Jsoup.connect("https://www.google.com/search?q=qlxmzhdls+rkrur&oq=qlxmzhdls+rkrur&aqs=chrome..69i57.1112j0j4&sourceid=chrome&ie=UTF-8").get();
+            let google_coin_search_btc = google_coin_search.select("span.DFlfde.SwHCTb").get(0).text();
+            output_text += "[GOOGLE SEARCH]\n";
+            output_text += "BTC/KRW : " + google_coin_search_btc + " 원";
+            replier.reply(output_text);
+        }
+
 
         
 
@@ -260,13 +283,6 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         
         /*   혼합 명령어   */
 
-
-        /*   메세지 자르기   */
-        
-        str_split_Arr = [];
-        splited_msg = msg.split(" ");
-        splited_data = msg.replace(splited_msg[0] + " ","");
-        str_split_Arr = msg.split(" ");
 
 
         /*   번역   */
@@ -320,30 +336,6 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         }
 
         
-        /*   미세먼지   */
-        if(dict_cmd[str_split_Arr[0]] == "/먼지 (지역이름)"){
-            if(str_split_Arr.length == 1){
-                replier.reply(err_func(4));
-            }
-
-            else{
-                try{
-                    dust_raw_data = org.jsoup.Jsoup.connect("https://search.naver.com/search.naver?query=" + splited_data.replace(/ /g, "+") + "+날씨")
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36")
-                    .get().select("dl.indicator").get(0).select("dd");
-                    big_dust_data = dust_raw_data.get(0).text().replace("㎍/㎥", "μg/m³ (") + ")";
-                    small_dust_data = dust_raw_data.get(1).text().replace("㎍/㎥", "μg/m³ (") + ")";
-                    ozone_data = dust_raw_data.get(2).text().replace("ppm", "ppm (") + ")";
-                    replier.reply("미세먼지: " + big_dust_data + "\n초미세먼지: " + small_dust_data + "\n오존: " + ozone_data);
-                }
-                catch(error){
-                    replier.reply(error);
-                }
-            }
-        
-
-        }
-        
 
         /*   랜덤   */
         if(dict_cmd[str_split_Arr[0]] == "/랜덤 (옵션1) (옵션2) (옵션3)..."){
@@ -361,24 +353,20 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         /*   나무위키   */
         if(dict_cmd[str_split_Arr[0]] == "/나무위키 (검색)"){
             try{
-                나무검색 = msg.trim().substring(6);
-                나무검색값 = encodeURI(나무검색);
-                나무위키 = Utils.getWebText("https://namu.wiki/w/" + 나무검색값);
-                나무값 = 나무위키.split('<div class="wiki-heading-content">')[1].split('<h2 class="wiki-heading">')[0].replace(/(<([^>]+)>)/g, "").trim().substring(0,200)+"...";
-                replier.reply(나무검색 + "에 대한 결과입니다.\n" + 나무값 + "\n\n자세한내용은" + "https://namu.wiki/w/" + 나무검색값 + "을 참고해주세요");
-
-            }
-            catch (e){
-                replier.reply("나무위키에서 " + 나무검색 + "을(를) 찾을 수 없거나 오류가 있습니다.");
+                나무검색값 = encodeURI(splited_data);
+                //나무위키 = Utils.getWebText("https://namu.wiki/w/" + 나무검색값);
+                //나무값 = 나무위키.split('<div class="wiki-heading-content">')[1].split('<h2 class="wiki-heading">')[0].replace(/(<([^>]+)>)/g, "").trim().substring(0,200)+"...";
+                //replier.reply(splited_data + "에 대한 결과입니다.\n" + 나무값 + "\n\n자세한내용은" + "https://namu.wiki/w/" + 나무검색값 + " 을 참고해주세요");
+                replier.reply("https://namu.wiki/w/" + splited_data);
             }
 
-        
-
-
+            catch (e) {
+                replier.reply("나무위키에서 " + splited_data + "을(를) 찾을 수 없거나 오류가 있습니다.");
+            }
         }
 
 
-        /*   지역날씨   */
+        /*   날씨   */
         if(dict_cmd[str_split_Arr[0]] == "/날씨 (지역)"){
 
             if(msg.trim() == "/날씨"){
@@ -390,19 +378,26 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
                     weather_output_text[n] = weather_data.get(n).text();
                 }     
                 replier.reply("[전국 날씨 정보]\n\n" + weather_output_text.join("\n").replace(/도씨/g, "℃"));
+                
             }
 
             else{
-
                 let local_weather_data = org.jsoup.Jsoup.connect("https://m.search.naver.com/search.naver?query=" + splited_data.replace(/ /g, "+") + "+날씨").get();
                 local_weather_data = local_weather_data.select("div.status_wrap");
                 let local_temp = local_weather_data.select("strong").get(0).text();
                 local_temp = local_temp.replace("현재 온도", "온도 : ").replace("°", "℃");
-                let local_hum = local_weather_data.select("li.type_humidity").select("span").get(0).text();
                 let local_state = local_weather_data.select("div.weather_main").get(0).text();
-                let local_dust = local_weather_data.select("li.sign1").get(0);
-                local_dust = local_dust.select("span.figure_text").text() + " (" + local_dust.select("span.figure_result").text() + ")";
-                output_text = splited_data + " 날씨\n\n" +"상태 : " + local_state + "\n" + local_temp + "\n습도 : " + local_hum + "%\n미세먼지 : " + local_dust;
+                let local_hum = local_weather_data.select("li.type_humidity").select("span").get(0).text();
+                output_text = "[" + splited_data + " 날씨 정보]\n\n" + "상태 : " + local_state + "\n" + local_temp + "\n습도 : " + local_hum +"\n\n";
+                
+                dust_raw_data = org.jsoup.Jsoup.connect("https://search.naver.com/search.naver?query=" + splited_data.replace(/ /g, "+") + "+날씨")
+                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36")
+                .get().select("dl.indicator").get(0).select("dd");
+                big_dust_data = dust_raw_data.get(0).text().replace("㎍/㎥", "μg/m³ (") + ")";
+                small_dust_data = dust_raw_data.get(1).text().replace("㎍/㎥", "μg/m³ (") + ")";
+                ozone_data = dust_raw_data.get(2).text().replace("ppm", "ppm (") + ")";
+
+                output_text += ("미세먼지: " + big_dust_data + "\n초미세먼지: " + small_dust_data + "\n오존: " + ozone_data);
                 replier.reply(output_text);
                 
             }
@@ -410,8 +405,184 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         }
         
         
+        /*   업비트 코인가격   */
+        if(dict_cmd[str_split_Arr[0]] == "/업비트 (코인심볼)"){
+            try{
+                let upbit_url = "https://crix-api-endpoint.upbit.com/v1/crix/candles/minutes/1?code=CRIX.UPBIT.KRW-";
+                let upbit_coin_symbol = "BTC";
+
+                if(str_split_Arr.length != 1){
+                    upbit_coin_symbol = splited_data;
+                }
+
+                upbit_coin_symbol = upbit_coin_symbol.toUpperCase();
+
+                upbit_url += upbit_coin_symbol;
+                let upbit_rawtext = Utils.getWebText(upbit_url);
+                upbit_rawtext = upbit_rawtext.replace("<head>","");
+                upbit_rawtext = upbit_rawtext.replace("</head>","");
+                upbit_rawtext = upbit_rawtext.replace("<body>","");
+                upbit_rawtext = upbit_rawtext.replace("</body>","");
+                upbit_rawtext = upbit_rawtext.replace("<html>","");
+                upbit_rawtext = upbit_rawtext.replace("</html>","");
+                upbit_rawtext = upbit_rawtext.replace("[{","");
+                upbit_rawtext = upbit_rawtext.replace("}]","");
+                upbit_rawtext = upbit_rawtext.replace(/"/g, "");
+                upbit_rawtext = upbit_rawtext.trim();
+
+                let upbit_1arr = upbit_rawtext.split(",");
+                let upbit_dict = {};
+                
+                for (i in upbit_1arr){
+                    upbit_1arr[i] = upbit_1arr[i].split(":");
+                    upbit_dict[upbit_1arr[i][0]] = upbit_1arr[i][1];
+                }
+                output_text += "[UPBIT API]\n";
+                output_text += upbit_coin_symbol + "/KRW : ";
+                output_text += String(parseFloat(upbit_dict["tradePrice"])) + " KRW";
+                replier.reply(output_text);
+
+            }
+
+            catch(error){
+                replier.reply("해당 코인이 존재하지 않습니다\n" + error);
+            }
+
+        }
+
+
+        /*   바이낸스 코인가격   */
+        if(dict_cmd[str_split_Arr[0]] == "/바이낸스 (코인심볼)"){
+            try{
+                let binance_url = "https://api.binance.com/api/v3/ticker/price?symbol=";
+                let binance_coin_symbol = "BTC";
+                if(str_split_Arr.length != 1){
+                    binance_coin_symbol = splited_data;
+                }
+                binance_coin_symbol = binance_coin_symbol.toUpperCase();
+                binance_url += binance_coin_symbol + "USDT";
+
+                let binance_rawtext = Utils.getWebText(binance_url);
+                
+                binance_rawtext = binance_rawtext.replace("<head>","");
+                binance_rawtext = binance_rawtext.replace("</head>","");
+                binance_rawtext = binance_rawtext.replace("<body>","");
+                binance_rawtext = binance_rawtext.replace("</body>","");
+                binance_rawtext = binance_rawtext.replace("<html>","");
+                binance_rawtext = binance_rawtext.replace("</html>","");
+                binance_rawtext = binance_rawtext.replace("{","");
+                binance_rawtext = binance_rawtext.replace("}","");
+                binance_rawtext = binance_rawtext.replace(/"/g, "");
+                binance_rawtext = binance_rawtext.trim();
+                
+                let binance_1arr = binance_rawtext.split(",");
+                let binance_dict = {};
+
+                for (i in binance_1arr){
+                    binance_1arr[i] = binance_1arr[i].split(":");
+                    binance_dict[binance_1arr[i][0]] = binance_1arr[i][1];
+                }
+                
+                output_text += "[BINANCE API]\n";
+                output_text += binance_coin_symbol + "/USDT : ";
+                output_text += String(parseFloat(binance_dict["price"])) + " USDT";
+                replier.reply(output_text);
+
+            }
+
+            catch(error){
+                replier.reply("해당 코인이 존재하지 않습니다\n" + error);
+            }
+
+        }
 
         
+        /*   김치프리미엄 계산   */
+        if(dict_cmd[str_split_Arr[0]] == "/김프 (코인심볼)"){
+            try{
+                let binance_url = "https://api.binance.com/api/v3/ticker/price?symbol=";
+                let binance_coin_symbol = "BTC";
+                if(str_split_Arr.length != 1){
+                    binance_coin_symbol = splited_data;
+                }
+                binance_coin_symbol = binance_coin_symbol.toUpperCase();
+                binance_url += binance_coin_symbol + "USDT";
+
+                let binance_rawtext = Utils.getWebText(binance_url);
+                
+                binance_rawtext = binance_rawtext.replace("<head>","");
+                binance_rawtext = binance_rawtext.replace("</head>","");
+                binance_rawtext = binance_rawtext.replace("<body>","");
+                binance_rawtext = binance_rawtext.replace("</body>","");
+                binance_rawtext = binance_rawtext.replace("<html>","");
+                binance_rawtext = binance_rawtext.replace("</html>","");
+                binance_rawtext = binance_rawtext.replace("{","");
+                binance_rawtext = binance_rawtext.replace("}","");
+                binance_rawtext = binance_rawtext.replace(/"/g, "");
+                binance_rawtext = binance_rawtext.trim();
+                
+                let binance_1arr = binance_rawtext.split(",");
+                let binance_dict = {};
+
+                for (i in binance_1arr){
+                    binance_1arr[i] = binance_1arr[i].split(":");
+                    binance_dict[binance_1arr[i][0]] = binance_1arr[i][1];
+                }
+                
+                output_text += "[BINANCE API]\n";
+                output_text += binance_coin_symbol + "/USDT : ";
+                output_text += String(parseFloat(binance_dict["price"])) + " USDT\n\n";
+
+                let upbit_url = "https://crix-api-endpoint.upbit.com/v1/crix/candles/minutes/1?code=CRIX.UPBIT.KRW-";
+                let upbit_coin_symbol = "BTC";
+
+                if(str_split_Arr.length != 1){
+                    upbit_coin_symbol = splited_data;
+                }
+
+                upbit_coin_symbol = upbit_coin_symbol.toUpperCase();
+
+                upbit_url += upbit_coin_symbol;
+                let upbit_rawtext = Utils.getWebText(upbit_url);
+                upbit_rawtext = upbit_rawtext.replace("<head>","");
+                upbit_rawtext = upbit_rawtext.replace("</head>","");
+                upbit_rawtext = upbit_rawtext.replace("<body>","");
+                upbit_rawtext = upbit_rawtext.replace("</body>","");
+                upbit_rawtext = upbit_rawtext.replace("<html>","");
+                upbit_rawtext = upbit_rawtext.replace("</html>","");
+                upbit_rawtext = upbit_rawtext.replace("[{","");
+                upbit_rawtext = upbit_rawtext.replace("}]","");
+                upbit_rawtext = upbit_rawtext.replace(/"/g, "");
+                upbit_rawtext = upbit_rawtext.trim();
+
+                let upbit_1arr = upbit_rawtext.split(",");
+                let upbit_dict = {};
+                
+                for (i in upbit_1arr){
+                    upbit_1arr[i] = upbit_1arr[i].split(":");
+                    upbit_dict[upbit_1arr[i][0]] = upbit_1arr[i][1];
+                }
+                output_text += "[UPBIT API]\n";
+                output_text += upbit_coin_symbol + "/KRW : ";
+                output_text += String(parseFloat(upbit_dict["tradePrice"])) + " KRW\n\n";
+
+                let usdkrw_rawdata = org.jsoup.Jsoup.connect("https://www.google.com/search?q=%EB%8B%AC%EB%9F%AC%ED%99%98%EC%9C%A8").get();
+                let usdkrw = usdkrw_rawdata.select("span.DFlfde.SwHCTb").get(0).text();
+                usdkrw = usdkrw.replace(",","");
+                output_text += "USD/KRW 환율 : " + usdkrw + "\n\n";
+                output_text += upbit_coin_symbol + " 김프 : ";
+                let kimp = (parseFloat(upbit_dict["tradePrice"]) / (parseFloat(binance_dict["price"]) * usdkrw) * 100 - 100);
+                output_text += String(kimp) + "%";
+                replier.reply(output_text);
+
+            }
+
+            catch(error){
+                replier.reply("해당 코인이 존재하지 않거나 오류가 있습니다\n" + error);
+            }
+
+        }
+
 
 
 
@@ -457,7 +628,6 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
     }
 
 
-    replier.markAsRead();
 }
 
 
@@ -479,6 +649,7 @@ function dict_init(dict_nat, dict_cmd, dict_inc){
     dict_cmd["/weather"] = dict_cmd["/전국날씨"] = "/전국날씨";
     dict_cmd["/펀비타임"] = dict_cmd["/펀비"] = dict_cmd["/fbtime"] = "/펀비타임";
     dict_cmd["/코로나"] = dict_cmd["/corona"] = "/코로나";
+    dict_cmd["/비트코인"] = dict_cmd["/btckrw"] = "/btckrw";
     
 
 
@@ -489,12 +660,14 @@ function dict_init(dict_nat, dict_cmd, dict_inc){
     dict_cmd["/영한"] = "/영한 (번역할 문장)";
     dict_cmd["/한일"] = "/한일 (번역할 문장)";
     dict_cmd["/일한"] = "/일한 (번역할 문장)";
-    dict_cmd["/먼지"] = dict_cmd["/미세먼지"] = dict_cmd["/dust"] = "/먼지 (지역이름)";
     dict_cmd["/검색"] = dict_cmd["/search"] = dict_cmd["/네이버검색"] = dict_cmd["/naver"] = dict_cmd["/네이버"] = "/네이버 (검색할 문장)";
     dict_cmd["/구글검색"] = dict_cmd["/google"] = dict_cmd["/구글"] = "/구글 (검색할 문장)";
     dict_cmd["/랜덤"] = "/랜덤 (옵션1) (옵션2) (옵션3)...";
-    dict_cmd["/나무위키"] = "/나무위키 (검색)";
-    dict_cmd["/날씨"] = "/날씨 (지역)";
+    dict_cmd["/나무위키"] = dict_cmd["/나무"] = dict_cmd["/위키"] = "/나무위키 (검색)";
+    dict_cmd["/날씨"] = dict_cmd["/미세먼지"] = "/날씨 (지역)";
+    dict_cmd["/업비트"] = dict_cmd["/upbit"] = "/업비트 (코인심볼)";
+    dict_cmd["/바이낸스"] = dict_cmd["/binance"] = dict_cmd["/바낸"] = "/바이낸스 (코인심볼)";
+    dict_cmd["/김프"] = dict_cmd["/김치프리미엄"] = dict_cmd["/kimp"] = "/김프 (코인심볼)";
 
 
 
@@ -578,20 +751,3 @@ function recompile_bot_func(){
 }
 
 
-
-
-
-/* 추가해야될 목록
-
-
-코인정보
-유튜브 검색기능
-명령어 목록 개인톡으로
-시평갭
-/가사 "노래제목"
-현재포지션/잔고확인
-김프
-사진가져와서보여주기
-
-
-*/
