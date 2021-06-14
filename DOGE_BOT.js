@@ -1,6 +1,7 @@
 
+
 /*   선언   */
-let doge_bot_ver = "1.3";
+let doge_bot_ver = "1.4";
 let output_text = "";
 
 let now;
@@ -29,6 +30,11 @@ let big_dust_data;
 let small_dust_data;
 let ozone_data;
 
+let same_alarm = new Array(100);
+for(let i = 0; i < same_alarm; i++){
+    same_alarm[i] = "";
+}
+let same_alarm_idx = 0;
 
 
 
@@ -38,7 +44,7 @@ let ozone_data;
 dict_init(dict_nat, dict_cmd, dict_inc);
 
 
-
+/*   메인함수   */
 function response(room, msg, sender, isGroupChat, replier, imageDB, packageName) {
     
     replier.markAsRead();
@@ -66,10 +72,8 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
 
         
         if(dict_cmd[msg] == "/test"){
-
-
-
-
+            
+            //let timerid = setInterval(() => Api.replyRoom("홍범순", "1", "com.kakao.talk"),1000);
         }
 
 
@@ -183,8 +187,8 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         }
 
 
-        /*   펀비타임   */
-        if(dict_cmd[msg] == "/펀비타임"){
+        /*   펀비   */
+        if(dict_cmd[msg] == "/펀비"){
             now = new Date();
             now_Hour = now.getHours();
 
@@ -218,9 +222,19 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
                 Nearest_Funding_left_hour = Nearest_Funding_left_hour + 24;
             }
 
-            output_text += "현재시간 : " + now.toTimeString() + " KST\n\n";
-            output_text += "Next Funding : " + Nearest_Funding_Time.toTimeString() + "\n\n";
-            output_text += Nearest_Funding_left_hour + "시간 " + Nearest_Funding_left_mins + "분 " + Nearest_Funding_left_secs + "초 남았습니다";
+            output_text += "Next Funding : " + Nearest_Funding_Time.toTimeString() + "\n";
+            output_text += Nearest_Funding_left_hour + "시간 " + Nearest_Funding_left_mins + "분 " + Nearest_Funding_left_secs + "초 남았습니다\n\n";
+            
+            
+            let premiumIndex_raw = org.jsoup.Jsoup.connect("https://www.binance.com/fapi/v1/premiumIndex").ignoreContentType(true).get().text();
+            let premiumIndex_json = JSON.parse(premiumIndex_raw);
+
+            output_text += "[Funding Rate]\n";
+            for(let i=0;i<premiumIndex_json.length;i++){
+                output_text +=  premiumIndex_json[i].symbol + " : " + premiumIndex_json[i].lastFundingRate + "\n";
+            }
+            
+            
             replier.reply(output_text);
 
         }
@@ -267,6 +281,30 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
             let google_coin_search_btc = google_coin_search.select("span.DFlfde.SwHCTb").get(0).text();
             output_text += "[GOOGLE SEARCH]\n";
             output_text += "BTC/KRW : " + google_coin_search_btc + " 원";
+            replier.reply(output_text);
+        }
+
+
+        /*   한강 수온   */
+        if (dict_cmd[msg] == "/한강수온" || (msg.includes("인생") && msg.includes("싼다"))){
+            let hangang_server_raw = org.jsoup.Jsoup.connect("http://hangang.dkserver.wo.tc").get().text();
+            let hangang_json = JSON.parse(hangang_server_raw);
+            replier.reply("현재 한강 수온은 "+ hangang_json.temp + "도 입니다.");
+        }
+
+
+        /*   롱숏비율   */
+        if(dict_cmd[msg] == "/longshort"){
+            let funding_history_raw = org.jsoup.Jsoup.connect("https://www.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=5m").ignoreContentType(true).get().text();
+            let funding_history_json = JSON.parse(funding_history_raw);
+            output_text += "미결제 약정\n" + parseFloat(funding_history_json[29].sumOpenInterest).toFixed(3) + " BTC\n\n";
+            output_text += "미결제 약정의 명목 가치\n" + parseFloat(funding_history_json[29].sumOpenInterestValue).toFixed(2)  + " USDT\n\n";
+
+            let longshort_ratio_raw = org.jsoup.Jsoup.connect("https://www.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m").ignoreContentType(true).get().text();
+            let longshort_ratio_json = JSON.parse(longshort_ratio_raw);
+            output_text += "롱 계정 : " + (longshort_ratio_json[29].longAccount * 100).toFixed(2) + "%\n";
+            output_text += "숏 계정 : " + (longshort_ratio_json[29].shortAccount * 100).toFixed(2) + "%";
+
             replier.reply(output_text);
         }
 
@@ -353,16 +391,17 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         /*   나무위키   */
         if(dict_cmd[str_split_Arr[0]] == "/나무위키 (검색)"){
             try{
-                나무검색값 = encodeURI(splited_data);
-                //나무위키 = Utils.getWebText("https://namu.wiki/w/" + 나무검색값);
-                //나무값 = 나무위키.split('<div class="wiki-heading-content">')[1].split('<h2 class="wiki-heading">')[0].replace(/(<([^>]+)>)/g, "").trim().substring(0,200)+"...";
-                //replier.reply(splited_data + "에 대한 결과입니다.\n" + 나무값 + "\n\n자세한내용은" + "https://namu.wiki/w/" + 나무검색값 + " 을 참고해주세요");
-                replier.reply("https://namu.wiki/w/" + splited_data);
+                namu_encodeURI = encodeURI(splited_data);
+                //namu_raw_data = org.jsoup.Jsoup.connect("https://namu.wiki/w/" + namu_encodeURI).userAgent("Mozilla").get();
+                //namu_value = namu_raw_data.split('<div class="wiki-heading-content">')[1].split('<h2 class="wiki-heading">')[0].replace(/(<([^>]+)>)/g, "").trim().substring(0,200)+"...";
+                //replier.reply(splited_data + "에 대한 결과입니다.\n" + namu_value + "\n\n자세한내용은 " + "https://namu.wiki/w/" + namu_encodeURI + " 을 참고해주세요");
+                replier.reply("https://namu.wiki/w/" + namu_encodeURI );
+            }
+            
+            catch (error) {
+                replier.reply("나무위키에서 " + splited_data + "을(를) 찾을 수 없거나 오류가 있습니다.\n" + error);
             }
 
-            catch (e) {
-                replier.reply("나무위키에서 " + splited_data + "을(를) 찾을 수 없거나 오류가 있습니다.");
-            }
         }
 
 
@@ -408,38 +447,30 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         /*   업비트 코인가격   */
         if(dict_cmd[str_split_Arr[0]] == "/업비트 (코인심볼)"){
             try{
-                let upbit_url = "https://crix-api-endpoint.upbit.com/v1/crix/candles/minutes/1?code=CRIX.UPBIT.KRW-";
                 let upbit_coin_symbol = "BTC";
-
                 if(str_split_Arr.length != 1){
                     upbit_coin_symbol = splited_data;
+
+                    let coin_symbol_krw = JSON.parse(org.jsoup.Jsoup.connect("https://api.upbit.com/v1/market/all").ignoreContentType(true).get().text());
+                    for (let i in coin_symbol_krw) {
+                        let keywordData = coin_symbol_krw[i];
+                        let keywordData_replaced = keywordData["korean_name"].replace(/(<([^>]+)>)/ig, " ");
+        
+                        if (keywordData_replaced == splited_data) {
+                            upbit_coin_symbol = keywordData["market"].replace(/(<([^>]+)>)/ig, " ").split("-")[1];
+                        }
+                    }
                 }
 
                 upbit_coin_symbol = upbit_coin_symbol.toUpperCase();
+                let upbit_json = upbit_func(upbit_coin_symbol);
 
-                upbit_url += upbit_coin_symbol;
-                let upbit_rawtext = Utils.getWebText(upbit_url);
-                upbit_rawtext = upbit_rawtext.replace("<head>","");
-                upbit_rawtext = upbit_rawtext.replace("</head>","");
-                upbit_rawtext = upbit_rawtext.replace("<body>","");
-                upbit_rawtext = upbit_rawtext.replace("</body>","");
-                upbit_rawtext = upbit_rawtext.replace("<html>","");
-                upbit_rawtext = upbit_rawtext.replace("</html>","");
-                upbit_rawtext = upbit_rawtext.replace("[{","");
-                upbit_rawtext = upbit_rawtext.replace("}]","");
-                upbit_rawtext = upbit_rawtext.replace(/"/g, "");
-                upbit_rawtext = upbit_rawtext.trim();
-
-                let upbit_1arr = upbit_rawtext.split(",");
-                let upbit_dict = {};
-                
-                for (i in upbit_1arr){
-                    upbit_1arr[i] = upbit_1arr[i].split(":");
-                    upbit_dict[upbit_1arr[i][0]] = upbit_1arr[i][1];
-                }
                 output_text += "[UPBIT API]\n";
-                output_text += upbit_coin_symbol + "/KRW : ";
-                output_text += String(parseFloat(upbit_dict["tradePrice"])) + " KRW";
+                output_text += "<" + upbit_coin_symbol + "/KRW>\n";
+                output_text += numberWithCommas(upbit_json[0].trade_price) + " (" + ((upbit_json[0].signed_change_rate)*100).toFixed(2) + "%)\n\n";
+                output_text += "24H 고가 : " + numberWithCommas(upbit_json[0].high_price) + " KRW\n";
+                output_text += "24H 저가 : " + numberWithCommas(upbit_json[0].low_price) + " KRW\n";
+                output_text += "24H 종가 : " + numberWithCommas(upbit_json[0].prev_closing_price) + " KRW";
                 replier.reply(output_text);
 
             }
@@ -454,124 +485,59 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         /*   바이낸스 코인가격   */
         if(dict_cmd[str_split_Arr[0]] == "/바이낸스 (코인심볼)"){
             try{
-                let binance_url = "https://api.binance.com/api/v3/ticker/price?symbol=";
                 let binance_coin_symbol = "BTC";
                 if(str_split_Arr.length != 1){
                     binance_coin_symbol = splited_data;
                 }
                 binance_coin_symbol = binance_coin_symbol.toUpperCase();
-                binance_url += binance_coin_symbol + "USDT";
+                let binance_json = binance_func(binance_coin_symbol);
 
-                let binance_rawtext = Utils.getWebText(binance_url);
-                
-                binance_rawtext = binance_rawtext.replace("<head>","");
-                binance_rawtext = binance_rawtext.replace("</head>","");
-                binance_rawtext = binance_rawtext.replace("<body>","");
-                binance_rawtext = binance_rawtext.replace("</body>","");
-                binance_rawtext = binance_rawtext.replace("<html>","");
-                binance_rawtext = binance_rawtext.replace("</html>","");
-                binance_rawtext = binance_rawtext.replace("{","");
-                binance_rawtext = binance_rawtext.replace("}","");
-                binance_rawtext = binance_rawtext.replace(/"/g, "");
-                binance_rawtext = binance_rawtext.trim();
-                
-                let binance_1arr = binance_rawtext.split(",");
-                let binance_dict = {};
-
-                for (i in binance_1arr){
-                    binance_1arr[i] = binance_1arr[i].split(":");
-                    binance_dict[binance_1arr[i][0]] = binance_1arr[i][1];
-                }
-                
                 output_text += "[BINANCE API]\n";
                 output_text += binance_coin_symbol + "/USDT : ";
-                output_text += String(parseFloat(binance_dict["price"])) + " USDT";
+                output_text += numberWithCommas(parseFloat(binance_json.price)) + " USDT";
                 replier.reply(output_text);
-
             }
-
             catch(error){
                 replier.reply("해당 코인이 존재하지 않습니다\n" + error);
             }
-
         }
 
         
         /*   김치프리미엄 계산   */
         if(dict_cmd[str_split_Arr[0]] == "/김프 (코인심볼)"){
             try{
-                let binance_url = "https://api.binance.com/api/v3/ticker/price?symbol=";
-                let binance_coin_symbol = "BTC";
+                output_text += "<김치 프리미엄>\n";
+                output_text += "[BINANCE / UPBIT]\n\n";
+
+                let coin_symbol = "BTC";
                 if(str_split_Arr.length != 1){
-                    binance_coin_symbol = splited_data;
+                    coin_symbol = splited_data;
+
+                    let coin_symbol_krw = JSON.parse(org.jsoup.Jsoup.connect("https://api.upbit.com/v1/market/all").ignoreContentType(true).get().text());
+                    for (let i in coin_symbol_krw) {
+                        let keywordData = coin_symbol_krw[i];
+                        let keywordData_replaced = keywordData["korean_name"].replace(/(<([^>]+)>)/ig, " ");
+        
+                        if (keywordData_replaced == splited_data) {
+                            coin_symbol = keywordData["market"].replace(/(<([^>]+)>)/ig, " ").split("-")[1];
+                        }
+                    }
                 }
-                binance_coin_symbol = binance_coin_symbol.toUpperCase();
-                binance_url += binance_coin_symbol + "USDT";
+                coin_symbol = coin_symbol.toUpperCase();
 
-                let binance_rawtext = Utils.getWebText(binance_url);
+                let binance_json = binance_func(coin_symbol);
+                output_text += coin_symbol + "/USDT : ";
+                output_text += numberWithCommas(parseFloat(binance_json.price)) + " USDT\n";
                 
-                binance_rawtext = binance_rawtext.replace("<head>","");
-                binance_rawtext = binance_rawtext.replace("</head>","");
-                binance_rawtext = binance_rawtext.replace("<body>","");
-                binance_rawtext = binance_rawtext.replace("</body>","");
-                binance_rawtext = binance_rawtext.replace("<html>","");
-                binance_rawtext = binance_rawtext.replace("</html>","");
-                binance_rawtext = binance_rawtext.replace("{","");
-                binance_rawtext = binance_rawtext.replace("}","");
-                binance_rawtext = binance_rawtext.replace(/"/g, "");
-                binance_rawtext = binance_rawtext.trim();
-                
-                let binance_1arr = binance_rawtext.split(",");
-                let binance_dict = {};
+                let upbit_json = upbit_func(coin_symbol);
+                output_text += coin_symbol + "/KRW : ";
+                output_text += numberWithCommas(parseFloat(upbit_json[0].trade_price)) + " KRW\n";
 
-                for (i in binance_1arr){
-                    binance_1arr[i] = binance_1arr[i].split(":");
-                    binance_dict[binance_1arr[i][0]] = binance_1arr[i][1];
-                }
-                
-                output_text += "[BINANCE API]\n";
-                output_text += binance_coin_symbol + "/USDT : ";
-                output_text += String(parseFloat(binance_dict["price"])) + " USDT\n\n";
+                let usdkrw_result = usdkrw_func();
+                output_text += "USD/KRW 환율 : " + numberWithCommas(usdkrw_result) + "\n";
 
-                let upbit_url = "https://crix-api-endpoint.upbit.com/v1/crix/candles/minutes/1?code=CRIX.UPBIT.KRW-";
-                let upbit_coin_symbol = "BTC";
-
-                if(str_split_Arr.length != 1){
-                    upbit_coin_symbol = splited_data;
-                }
-
-                upbit_coin_symbol = upbit_coin_symbol.toUpperCase();
-
-                upbit_url += upbit_coin_symbol;
-                let upbit_rawtext = Utils.getWebText(upbit_url);
-                upbit_rawtext = upbit_rawtext.replace("<head>","");
-                upbit_rawtext = upbit_rawtext.replace("</head>","");
-                upbit_rawtext = upbit_rawtext.replace("<body>","");
-                upbit_rawtext = upbit_rawtext.replace("</body>","");
-                upbit_rawtext = upbit_rawtext.replace("<html>","");
-                upbit_rawtext = upbit_rawtext.replace("</html>","");
-                upbit_rawtext = upbit_rawtext.replace("[{","");
-                upbit_rawtext = upbit_rawtext.replace("}]","");
-                upbit_rawtext = upbit_rawtext.replace(/"/g, "");
-                upbit_rawtext = upbit_rawtext.trim();
-
-                let upbit_1arr = upbit_rawtext.split(",");
-                let upbit_dict = {};
-                
-                for (i in upbit_1arr){
-                    upbit_1arr[i] = upbit_1arr[i].split(":");
-                    upbit_dict[upbit_1arr[i][0]] = upbit_1arr[i][1];
-                }
-                output_text += "[UPBIT API]\n";
-                output_text += upbit_coin_symbol + "/KRW : ";
-                output_text += String(parseFloat(upbit_dict["tradePrice"])) + " KRW\n\n";
-
-                let usdkrw_rawdata = org.jsoup.Jsoup.connect("https://www.google.com/search?q=%EB%8B%AC%EB%9F%AC%ED%99%98%EC%9C%A8").get();
-                let usdkrw = usdkrw_rawdata.select("span.DFlfde.SwHCTb").get(0).text();
-                usdkrw = usdkrw.replace(",","");
-                output_text += "USD/KRW 환율 : " + usdkrw + "\n\n";
-                output_text += upbit_coin_symbol + " 김프 : ";
-                let kimp = (parseFloat(upbit_dict["tradePrice"]) / (parseFloat(binance_dict["price"]) * usdkrw) * 100 - 100);
+                output_text += coin_symbol + " 김프 : ";
+                let kimp = (parseFloat(upbit_json[0].trade_price) / (parseFloat(binance_json.price) * usdkrw_result) * 100 - 100).toFixed(5);
                 output_text += String(kimp) + "%";
                 replier.reply(output_text);
 
@@ -582,6 +548,22 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
             }
 
         }
+
+
+        /*   라프텔 애니검색   */
+        if(dict_cmd[str_split_Arr[0]] == "/라프텔 (애니제목)"){
+            try{
+                let laftel_search = laftel(splited_data);
+                let laftel_result = JSON.parse(laftel_search.text());
+                replier.reply(laftel_result);
+            }
+
+            catch(error){
+                replier.reply(error);
+            }
+
+        }
+
 
 
 
@@ -615,20 +597,16 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
 
 
 
-        
-
         /*   읽음으로 표시하기   */
     
     }
-
-
-
     catch(catch_error_reply){
         replier.reply(catch_error_reply);
     }
 
-
 }
+
+
 
 
 
@@ -647,9 +625,11 @@ function dict_init(dict_nat, dict_cmd, dict_inc){
     dict_cmd["/time"] = dict_cmd["/시간"] = dict_cmd["/현재시간"] = dict_cmd["/현재시각"] = "/time";
     dict_cmd["/전역일"] = dict_cmd["/전역"] = "/전역";
     dict_cmd["/weather"] = dict_cmd["/전국날씨"] = "/전국날씨";
-    dict_cmd["/펀비타임"] = dict_cmd["/펀비"] = dict_cmd["/fbtime"] = "/펀비타임";
+    dict_cmd["/펀비타임"] = dict_cmd["/펀비"] = dict_cmd["/fbtime"] = "/펀비";
     dict_cmd["/코로나"] = dict_cmd["/corona"] = "/코로나";
     dict_cmd["/비트코인"] = dict_cmd["/btckrw"] = "/btckrw";
+    dict_cmd["/한강수온"] = dict_cmd["/한강 수온"] = dict_cmd["/한강"] = "/한강수온";
+    dict_cmd["/롱숏비율"] = dict_cmd["/롱숏"] = dict_cmd["/longshort"] = "/longshort";
     
 
 
@@ -668,6 +648,7 @@ function dict_init(dict_nat, dict_cmd, dict_inc){
     dict_cmd["/업비트"] = dict_cmd["/upbit"] = "/업비트 (코인심볼)";
     dict_cmd["/바이낸스"] = dict_cmd["/binance"] = dict_cmd["/바낸"] = "/바이낸스 (코인심볼)";
     dict_cmd["/김프"] = dict_cmd["/김치프리미엄"] = dict_cmd["/kimp"] = "/김프 (코인심볼)";
+    //dict_cmd["/라프텔"] = "/라프텔 (애니제목)";
 
 
 
@@ -684,7 +665,6 @@ function dict_init(dict_nat, dict_cmd, dict_inc){
 
     /*   포함된 자연어 저장부   */
     
-    dict_inc["우흥"] = "우흥~";
     dict_inc["모잠비크"] = "모잠비크 히야";
     dict_inc["타이완"] = "따이완 넘버원~";
 
@@ -751,3 +731,104 @@ function recompile_bot_func(){
 }
 
 
+/*   USD/KRW 원달러환율   */
+function usdkrw_func(){
+    let usdkrw_url = "https://quotation-api-cdn.dunamu.com/v1/forex/recent?codes=FRX.KRWUSD";
+    let usdkrw_json = JSON.parse(org.jsoup.Jsoup.connect(usdkrw_url).ignoreContentType(true).get().text());
+    let usdkrw = usdkrw_json[0].basePrice;
+    return usdkrw;
+}
+
+
+/*   바이낸스 JSON 함수   */
+function binance_func(coin_symbol){
+    let binance_url = "https://api.binance.com/api/v3/ticker/price?symbol=";
+    binance_url += coin_symbol + "USDT";
+    return JSON.parse(org.jsoup.Jsoup.connect(binance_url).ignoreContentType(true).get().text());
+}
+
+
+
+/*   업비트 JSON 함수   */
+function upbit_func(coin_symbol){
+    let upbit_url = "https://api.upbit.com/v1/ticker?markets=KRW-";
+    upbit_url += coin_symbol;
+    return JSON.parse(org.jsoup.Jsoup.connect(upbit_url).ignoreContentType(true).get().text());
+}
+
+
+/*   화폐단위 컴마출력   */
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+
+
+
+/*   텔레그램 알림   */
+function onNotificationPosted(StatusBarNotification, sbn) {
+
+    //Device.acquireWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "wakelock kakao", -1);
+
+    sbn.bindSession("org.telegram.messenger");
+    if (StatusBarNotification.getOpPkg()=="org.telegram.messenger"){
+        let tele_data = StatusBarNotification.getNotification().extras;
+
+        if (tele_data.getString("android.text") && !tele_data.getString("android.text").startsWith("대화방")){
+            let tele_same_tmp = 0;
+            for (let i = 0; i < 100; i++){
+                if(tele_data.getString("android.text") == same_alarm[i]){
+                    tele_same_tmp = 1;
+                }
+            }
+
+            if(tele_same_tmp == 0){
+                //Api.replyRoom("홍범순", tele_data.getString("android.text"), "com.kakao.talk");
+                Api.replyRoom("바이낸스 종합 시그널방", tele_data.getString("android.text"), "com.kakao.talk");
+                same_alarm[same_alarm_idx] = tele_data.getString("android.text");
+                same_alarm_idx++;
+                same_alarm_idx = same_alarm_idx % 100;
+            }
+        }
+    }
+
+
+    /*
+    sbn.bindSession("com.coinness");
+    if (StatusBarNotification.getOpPkg()=="com.coinness"){
+        let tele_data = StatusBarNotification.getNotification().extras;
+
+        if (tele_data.getString("android.text")){
+
+            let tele_same_tmp = 0;
+            for (let i = 0; i < 100; i++){
+                if(tele_data.getString("android.text") == same_alarm[i]){
+                    tele_same_tmp = 1;
+                }
+            }
+
+            if(tele_same_tmp == 0){
+                //Api.replyRoom("홍범순", tele_data.getString("android.text"), "com.kakao.talk");
+                Api.replyRoom("signalroom", tele_data.getString("android.text"), "com.kakao.talk");
+                same_alarm[same_alarm_idx] = tele_data.getString("android.text");
+                same_alarm_idx++;
+                same_alarm_idx = same_alarm_idx % 100;
+            }
+
+        }
+    }
+    */
+
+    //Device.releaseWakeLock();
+
+
+}
+
+
+/*   라프텔 애니검색   */
+function laftel(str) {
+    let res = org.jsoup.Jsoup.connect("http://laftel.net/api/search/v1/keyword/?keyword=" + str)
+        .header("authorization", "Token a06d1ed6a69f5ab4001b734cc5afa894a717bdcb")
+        .header("laftel", "TeJava").ignoreContentType(true).ignoreHttpErrors(true).get();
+    return res;
+}
