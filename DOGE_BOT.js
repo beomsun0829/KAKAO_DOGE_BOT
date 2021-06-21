@@ -1,7 +1,6 @@
 
-
 /*   선언   */
-let doge_bot_ver = "1.4";
+let doge_bot_ver = "1.45";
 let output_text = "";
 
 let now;
@@ -21,7 +20,6 @@ let info_msg_sender;
 let batt_health;
 let batt_status;
 
-let splited_msg;
 let splited_data;
 let papago_Api_Tr_result;
 
@@ -35,6 +33,14 @@ for(let i = 0; i < same_alarm; i++){
     same_alarm[i] = "";
 }
 let same_alarm_idx = 0;
+
+
+let timerId;
+let timer_rawdate;
+
+let funding_history_before_btc = 0;
+let funding_history_before_usdt = 0;
+
 
 
 
@@ -58,9 +64,8 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         /*   메세지 자르기   */
         
         str_split_Arr = [];
-        splited_msg = msg.split(" ");
-        splited_data = msg.replace(splited_msg[0] + " ","");
         str_split_Arr = msg.split(" ");
+        splited_data = msg.replace(str_split_Arr[0] + " ","");
 
 
         
@@ -68,13 +73,23 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
 
         
         /*   테스터   */
-
-
-        
         if(dict_cmd[msg] == "/test"){
-            
-            //let timerid = setInterval(() => Api.replyRoom("홍범순", "1", "com.kakao.talk"),1000);
+            timer_rawdate = new Date();
+            //Api.replyRoom("홍범순", timer_rawdate.toLocaleTimeString(), "com.kakao.talk");
+            let timer_date_min = timer_rawdate.getMinutes();
+            let timer_date_hour = timer_rawdate.getHours();
+            let timer_date_hourmin = timer_date_hour.toString() + timer_date_min.toString();
+            replier.reply(timer_date_hourmin);
+
         }
+
+        if(dict_cmd[msg] == "/test2"){
+
+
+
+        }
+
+
 
 
 
@@ -189,59 +204,17 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
 
         /*   펀비   */
         if(dict_cmd[msg] == "/펀비"){
-            now = new Date();
-            now_Hour = now.getHours();
-
-            if(now_Hour >= 01 && now_Hour < 09){
-                Nearest_Funding_Time = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0, 0);
-            }
-
-            else if(now_Hour >= 09 && now_Hour < 17){
-                Nearest_Funding_Time = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
-            }
-
-            else{
-                Nearest_Funding_Time = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 1, 0, 0, 0);
-            }
-
-            Nearest_Funding_left_secs = Nearest_Funding_Time.getSeconds() - now.getSeconds();
-            Nearest_Funding_left_mins = Nearest_Funding_Time.getMinutes() - now.getMinutes();
-            Nearest_Funding_left_hour = Nearest_Funding_Time.getHours() - now.getHours();
-
-            if(Nearest_Funding_left_secs < 0){
-                Nearest_Funding_left_secs = Nearest_Funding_left_secs + 60;
-                Nearest_Funding_left_mins = Nearest_Funding_left_mins - 1;
-            }
-
-            if(Nearest_Funding_left_mins < 0){
-                Nearest_Funding_left_mins = Nearest_Funding_left_mins + 60;
-                Nearest_Funding_left_hour = Nearest_Funding_left_hour - 1;
-            }
-
-            if(Nearest_Funding_left_hour < 0){
-                Nearest_Funding_left_hour = Nearest_Funding_left_hour + 24;
-            }
-
-            output_text += "Next Funding : " + Nearest_Funding_Time.toTimeString() + "\n";
-            output_text += Nearest_Funding_left_hour + "시간 " + Nearest_Funding_left_mins + "분 " + Nearest_Funding_left_secs + "초 남았습니다\n\n";
-            
-            
-            let premiumIndex_raw = org.jsoup.Jsoup.connect("https://www.binance.com/fapi/v1/premiumIndex").ignoreContentType(true).get().text();
-            let premiumIndex_json = JSON.parse(premiumIndex_raw);
-
-            output_text += "[Funding Rate]\n";
-            for(let i=0;i<premiumIndex_json.length;i++){
-                output_text +=  premiumIndex_json[i].symbol + " : " + premiumIndex_json[i].lastFundingRate + "\n";
-            }
-            
-            
-            replier.reply(output_text);
-
+            replier.reply(Nearest_Funding_func());
         }
 
 
         /*   봇 컴파일   */
         if(dict_cmd[msg] == "/compile"){
+            if (timerId != null){
+                clearInterval(timerId);
+                timerId = null;
+                Api.replyRoom("홍범순", "타이머종료됨", "com.kakao.talk");
+            }
             replier.reply(recompile_bot_func());
         }
 
@@ -295,18 +268,77 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
 
         /*   롱숏비율   */
         if(dict_cmd[msg] == "/longshort"){
-            let funding_history_raw = org.jsoup.Jsoup.connect("https://www.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=5m").ignoreContentType(true).get().text();
-            let funding_history_json = JSON.parse(funding_history_raw);
-            output_text += "미결제 약정\n" + parseFloat(funding_history_json[29].sumOpenInterest).toFixed(3) + " BTC\n\n";
-            output_text += "미결제 약정의 명목 가치\n" + parseFloat(funding_history_json[29].sumOpenInterestValue).toFixed(2)  + " USDT\n\n";
-
-            let longshort_ratio_raw = org.jsoup.Jsoup.connect("https://www.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m").ignoreContentType(true).get().text();
-            let longshort_ratio_json = JSON.parse(longshort_ratio_raw);
-            output_text += "롱 계정 : " + (longshort_ratio_json[29].longAccount * 100).toFixed(2) + "%\n";
-            output_text += "숏 계정 : " + (longshort_ratio_json[29].shortAccount * 100).toFixed(2) + "%";
-
-            replier.reply(output_text);
+            replier.reply(longshort_ratio_func());
         }
+
+
+        /*   시평   */
+        
+        if(dict_cmd[msg] == "/perpetual"){
+            let premiumIndex_raw = org.jsoup.Jsoup.connect("https://www.binance.com/fapi/v1/premiumIndex").ignoreContentType(true).get().text();
+            let premiumIndex_json = JSON.parse(premiumIndex_raw);
+            let Perpetual_Premium_Index_url_nosymbol = "https://www.binance.com/fapi/v1/marketKlines?interval=1m&limit=1&symbol=p";
+
+            output_text += "[Perpetual Premium Index]\n\n";
+            for(let i=0;i<premiumIndex_json.length;i++){
+                let Perpetual_symbol = premiumIndex_json[i].symbol;
+                if(!premiumIndex_json[i].symbol.includes("_") && !premiumIndex_json[i].symbol.includes("BUSD")){
+                    let Perpetual_Premium_Index_url = Perpetual_Premium_Index_url_nosymbol + Perpetual_symbol;
+    
+                    let Perpetual_Premium_Index_raw = org.jsoup.Jsoup.connect(Perpetual_Premium_Index_url).ignoreContentType(true).get().text();
+                    let Perpetual_Premium_Index_json = JSON.parse(Perpetual_Premium_Index_raw);
+                    output_text += Perpetual_symbol + " : " + Perpetual_Premium_Index_json[0][4] + "\n";
+                    //replier.reply(Perpetual_symbol + " : " + Perpetual_Premium_Index_json[0][4] + "\n");
+                }
+            }
+            replier.reply(output_text);
+
+        }
+
+
+
+
+        /*   타이머 시작   */
+        if (dict_cmd[msg] == "/timerstart"){
+            if(timerId == null){
+                Api.replyRoom("홍범순", "타이머 작동시작", "com.kakao.talk");
+                timerId = setInterval(function tick() {
+                    timer_rawdate = new Date();
+                    //Api.replyRoom("홍범순", timer_rawdate.toLocaleTimeString(), "com.kakao.talk");
+                    let timer_date_min = timer_rawdate.getMinutes();
+                    let timer_date_hour = timer_rawdate.getHours();
+                    let timer_date_hourmin = timer_date_hour.toString() + timer_date_min.toString();
+                    if(timer_date_min % 10 == 0){
+                        Api.replyRoom("바이낸스 종합 시그널방", longshort_ratio_func(), "com.kakao.talk");
+                        ///Api.replyRoom("홍범순", longshort_ratio_func(), "com.kakao.talk");
+                    }
+
+                    if((timer_date_hour == 0 && timer_date_min == 45) || timer_date_hourmin == "845" || timer_date_hourmin == "1645"){
+                        Api.replyRoom("바이낸스 종합 시그널방", Nearest_Funding_func(), "com.kakao.talk");
+                        //Api.replyRoom("홍범순", Nearest_Funding_func(), "com.kakao.talk");
+                    }
+                }, 60000);
+            }
+
+            else{
+                Api.replyRoom("홍범순", "timerId가 이미 실행중", "com.kakao.talk");
+            }
+        }
+
+        /*   타이머 종료   */
+        if (dict_cmd[msg] == "/timerstop"){
+            if (timerId != null){
+                clearInterval(timerId);
+                timerId = null;
+                Api.replyRoom("홍범순", "타이머 종료완료", "com.kakao.talk");
+            }
+            else{
+                Api.replyRoom("홍범순", "timerId가 실행중이 아닙니다", "com.kakao.talk");
+            }
+
+
+        }
+
 
 
         
@@ -329,22 +361,22 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
                 replier.reply(err_func(2));
             }
             
-            else if(splited_msg[0] == "/영한"){    
+            else if(str_split_Arr[0] == "/영한"){    
                 papago_Api_Tr_result = Api.papagoTranslate("en","ko",splited_data);
                 replier.reply("en->ko : " + papago_Api_Tr_result);
             }
 
-            else if(splited_msg[0] == "/한영"){    
+            else if(str_split_Arr[0] == "/한영"){    
                 papago_Api_Tr_result = Api.papagoTranslate("ko","en",splited_data);
                 replier.reply("ko->en : " + papago_Api_Tr_result);
             }
 
-            else if(splited_msg[0] == "/일한"){   
+            else if(str_split_Arr[0] == "/일한"){   
                 papago_Api_Tr_result = Api.papagoTranslate("ja","ko",splited_data);
                 replier.reply("ja->ko : " + papago_Api_Tr_result);
             }
 
-            else if(splited_msg[0] == "/한일"){    
+            else if(str_split_Arr[0] == "/한일"){    
                 papago_Api_Tr_result = Api.papagoTranslate("ko","ja",splited_data);
                 replier.reply("ko->ja : " + papago_Api_Tr_result);
             }
@@ -619,6 +651,7 @@ function dict_init(dict_nat, dict_cmd, dict_inc){
     /*   단순명령어 저장부   */
     
     dict_cmd["/테스트"] = dict_cmd["/test"] = dict_cmd["/tt"] = "/test";
+    dict_cmd["/테스트2"] = dict_cmd["/test2"] = dict_cmd["/tt2"] = "/test2";
     dict_cmd["/컴파일"] = dict_cmd["/compile"] = dict_cmd["/cc"] = "/compile";
     dict_cmd["/info"] = dict_cmd["/정보"] = dict_cmd["/상태"] = "/info";
     dict_cmd["/help"] = dict_cmd["/도움"] = dict_cmd["/명령어"] = "/help";
@@ -648,6 +681,9 @@ function dict_init(dict_nat, dict_cmd, dict_inc){
     dict_cmd["/업비트"] = dict_cmd["/upbit"] = "/업비트 (코인심볼)";
     dict_cmd["/바이낸스"] = dict_cmd["/binance"] = dict_cmd["/바낸"] = "/바이낸스 (코인심볼)";
     dict_cmd["/김프"] = dict_cmd["/김치프리미엄"] = dict_cmd["/kimp"] = "/김프 (코인심볼)";
+    dict_cmd["/시평갭"] = dict_cmd["/perpetual"] = "/perpetual";
+    dict_cmd["/타이머시작"] = dict_cmd["/timerstart"] = "/timerstart";
+    dict_cmd["/타이머종료"] = dict_cmd["/timerstop"] = "/timerstop";
     //dict_cmd["/라프텔"] = "/라프텔 (애니제목)";
 
 
@@ -774,7 +810,7 @@ function onNotificationPosted(StatusBarNotification, sbn) {
     if (StatusBarNotification.getOpPkg()=="org.telegram.messenger"){
         let tele_data = StatusBarNotification.getNotification().extras;
 
-        if (tele_data.getString("android.text") && !tele_data.getString("android.text").startsWith("대화방")){
+        if (tele_data.getString("android.text") && !tele_data.getString("android.text").startsWith("대화방") && !tele_data.getString("android.text").includes("Killers")){
             let tele_same_tmp = 0;
             for (let i = 0; i < 100; i++){
                 if(tele_data.getString("android.text") == same_alarm[i]){
@@ -831,4 +867,91 @@ function laftel(str) {
         .header("authorization", "Token a06d1ed6a69f5ab4001b734cc5afa894a717bdcb")
         .header("laftel", "TeJava").ignoreContentType(true).ignoreHttpErrors(true).get();
     return res;
+}
+
+/*   롱숏비율 함수   */
+function longshort_ratio_func(){
+    let output_text_return = "";
+
+    let funding_history_raw = org.jsoup.Jsoup.connect("https://www.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=5m").ignoreContentType(true).get().text();
+    let funding_history_json = JSON.parse(funding_history_raw);
+    let sumOpenInterest = parseFloat(funding_history_json[29].sumOpenInterest).toFixed(3);
+    let sumOpenInterestValue = parseFloat(funding_history_json[29].sumOpenInterestValue).toFixed(2);
+    if (funding_history_before_btc == 0){
+        output_text_return += "미결제 약정\n" + sumOpenInterest + " BTC ( - )\n\n";
+    }
+    else{
+        output_text_return += "미결제 약정\n" + sumOpenInterest + " BTC (" + ((sumOpenInterest-funding_history_before_btc).toFixed(3)).toString() + ")\n\n";
+    }
+
+    if (funding_history_before_usdt == 0){
+        output_text_return += "미결제 약정의 명목 가치\n" + sumOpenInterestValue  + " USDT ( - )\n\n";
+    }
+    else{
+        output_text_return += "미결제 약정의 명목 가치\n" + sumOpenInterestValue  + " USDT (" + ((sumOpenInterestValue-funding_history_before_usdt).toFixed(2)).toString() + ")\n\n";
+    }
+
+
+    funding_history_before_btc = sumOpenInterest;
+    funding_history_before_usdt = sumOpenInterestValue;
+
+
+    let longshort_ratio_raw = org.jsoup.Jsoup.connect("https://www.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m").ignoreContentType(true).get().text();
+    let longshort_ratio_json = JSON.parse(longshort_ratio_raw);
+    output_text_return += "롱 계정 : " + (longshort_ratio_json[29].longAccount * 100).toFixed(2) + "%\n";
+    output_text_return += "숏 계정 : " + (longshort_ratio_json[29].shortAccount * 100).toFixed(2) + "%";
+    
+    return output_text_return;
+}
+
+
+/*   펀비 함수   */
+function Nearest_Funding_func(){
+    let output_text_return = "";
+
+    now = new Date();
+    now_Hour = now.getHours();
+
+    if(now_Hour >= 01 && now_Hour < 09){
+        Nearest_Funding_Time = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0, 0);
+    }
+
+    else if(now_Hour >= 09 && now_Hour < 17){
+        Nearest_Funding_Time = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
+    }
+
+    else{
+        Nearest_Funding_Time = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 1, 0, 0, 0);
+    }
+
+    Nearest_Funding_left_secs = Nearest_Funding_Time.getSeconds() - now.getSeconds();
+    Nearest_Funding_left_mins = Nearest_Funding_Time.getMinutes() - now.getMinutes();
+    Nearest_Funding_left_hour = Nearest_Funding_Time.getHours() - now.getHours();
+
+    if(Nearest_Funding_left_secs < 0){
+        Nearest_Funding_left_secs = Nearest_Funding_left_secs + 60;
+        Nearest_Funding_left_mins = Nearest_Funding_left_mins - 1;
+    }
+
+    if(Nearest_Funding_left_mins < 0){
+        Nearest_Funding_left_mins = Nearest_Funding_left_mins + 60;
+        Nearest_Funding_left_hour = Nearest_Funding_left_hour - 1;
+    }
+
+    if(Nearest_Funding_left_hour < 0){
+        Nearest_Funding_left_hour = Nearest_Funding_left_hour + 24;
+    }
+
+    output_text_return += "Next Funding : " + Nearest_Funding_Time.toTimeString() + "\n";
+    output_text_return += Nearest_Funding_left_hour + "시간 " + Nearest_Funding_left_mins + "분 " + Nearest_Funding_left_secs + "초 남았습니다\n\n";
+    
+    
+    let premiumIndex_raw = org.jsoup.Jsoup.connect("https://www.binance.com/fapi/v1/premiumIndex").ignoreContentType(true).get().text();
+    let premiumIndex_json = JSON.parse(premiumIndex_raw);
+
+    output_text_return += "[Funding Rate]\n";
+    for(let i=0;i<premiumIndex_json.length;i++){
+        output_text_return +=  premiumIndex_json[i].symbol + " : " + premiumIndex_json[i].lastFundingRate + "\n";
+    }
+    return output_text_return;
 }
