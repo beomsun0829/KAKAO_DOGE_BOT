@@ -1,6 +1,6 @@
 
 /*   선언   */
-let doge_bot_ver = "1.45";
+let doge_bot_ver = "1.5";
 let output_text = "";
 
 let now;
@@ -28,7 +28,7 @@ let big_dust_data;
 let small_dust_data;
 let ozone_data;
 
-let same_alarm = new Array(100);
+let same_alarm = new Array(150);
 for(let i = 0; i < same_alarm; i++){
     same_alarm[i] = "";
 }
@@ -40,6 +40,8 @@ let timer_rawdate;
 
 let funding_history_before_btc = 0;
 let funding_history_before_usdt = 0;
+let long_history_before_btc = 0;
+let short_history_before_btc = 0;
 
 
 
@@ -72,25 +74,6 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         /*   단순 명령어   */
 
         
-        /*   테스터   */
-        if(dict_cmd[msg] == "/test"){
-            timer_rawdate = new Date();
-            //Api.replyRoom("홍범순", timer_rawdate.toLocaleTimeString(), "com.kakao.talk");
-            let timer_date_min = timer_rawdate.getMinutes();
-            let timer_date_hour = timer_rawdate.getHours();
-            let timer_date_hourmin = timer_date_hour.toString() + timer_date_min.toString();
-            replier.reply(timer_date_hourmin);
-
-        }
-
-        if(dict_cmd[msg] == "/test2"){
-
-
-
-        }
-
-
-
 
 
         /*   봇 정보   */
@@ -220,31 +203,20 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
 
         /*   코로나   */
         if(dict_cmd[msg] == "/코로나"){
-            let corona_data = org.jsoup.Jsoup.connect("https://search.naver.com/search.naver?query=코로나").get();
-            let status_corona_data = corona_data.select("div.status_info");
-            let status_corona_data_01 = status_corona_data.select("li.info_01").select("p.info_num").get(0).text();
-            let status_corona_data_01_var = status_corona_data.select("li.info_01").select("em.info_variation").get(0).text();
-            let status_corona_data_02 = status_corona_data.select("li.info_02").select("p.info_num").get(0).text();
-            let status_corona_data_02_var = status_corona_data.select("li.info_02").select("em.info_variation").get(0).text();
-            let status_corona_data_03 = status_corona_data.select("li.info_03").select("p.info_num").get(0).text();
-            let status_corona_data_03_var = status_corona_data.select("li.info_03").select("em.info_variation").get(0).text();
-            let status_corona_data_04 = status_corona_data.select("li.info_04").select("p.info_num").get(0).text();
-            let status_corona_data_04_var = status_corona_data.select("li.info_04").select("em.info_variation").get(0).text();
-
-            output_text += "확진환자 : " + status_corona_data_01 + " (+" + status_corona_data_01_var + ")" + "\n";
-            output_text += "격리해제 : " + status_corona_data_02 + " (+" + status_corona_data_02_var + ")" + "\n";
-            output_text += "사망자 : " + status_corona_data_03 + " (+" + status_corona_data_03_var + ")" + "\n";
-            output_text += "검사진행 : " + status_corona_data_04 + " (+" + status_corona_data_04_var + ")" + "\n\n";
             
-            let today_corona_data = corona_data.select("div.status_today").get(0);
-            let today_corona_data_01 = today_corona_data.select("li.info_02").select("em.info_num").get(0).text();
-            let today_corona_data_02 = today_corona_data.select("li.info_03").select("em.info_num").get(0).text();
+            let corona_raw = org.jsoup.Jsoup.connect("https://apiv2.corona-live.com/domestic-init.json?_=1626341427397").ignoreContentType(true).get().text();
+            let corona_json = JSON.parse(corona_raw);
 
-            output_text += "일일 확진자 수 : " + (parseInt(today_corona_data_01) + parseInt(today_corona_data_02)) + "\n";
-            output_text += "국내 발생 : " + today_corona_data_01 + "\n";
-            output_text += "해외 유입 : " + today_corona_data_02;
+            output_text += "코로나 라이브\n\n";
+            output_text += "확진자 : " + numberWithCommas(corona_json.stats.cases[0]) + " (+" + numberWithCommas(corona_json.stats.cases[1]) + ")\n";
+            output_text += "사망자 : " + numberWithCommas(corona_json.stats.deaths[0]) + " (+" + numberWithCommas(corona_json.stats.deaths[1]) + ")\n";
+            output_text += "완치자 : " + numberWithCommas(corona_json.stats.recovered[0]) + " (+" + numberWithCommas(corona_json.stats.recovered[1]) + ")\n";
+            output_text += "검사자 : " + numberWithCommas(corona_json.stats.tests[0]) + " (+" + numberWithCommas(corona_json.stats.tests[1]) + ")\n\n";
+
+            output_text += "오늘 확진자 수 : " + numberWithCommas(corona_json.statsLive.today);
 
             replier.reply(output_text);
+
         }
 
 
@@ -273,7 +245,6 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
 
 
         /*   시평   */
-        
         if(dict_cmd[msg] == "/perpetual"){
             let premiumIndex_raw = org.jsoup.Jsoup.connect("https://www.binance.com/fapi/v1/premiumIndex").ignoreContentType(true).get().text();
             let premiumIndex_json = JSON.parse(premiumIndex_raw);
@@ -308,13 +279,21 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
                     let timer_date_min = timer_rawdate.getMinutes();
                     let timer_date_hour = timer_rawdate.getHours();
                     let timer_date_hourmin = timer_date_hour.toString() + timer_date_min.toString();
-                    if(timer_date_min % 10 == 0){
-                        Api.replyRoom("바이낸스 종합 시그널방", longshort_ratio_func(), "com.kakao.talk");
-                        ///Api.replyRoom("홍범순", longshort_ratio_func(), "com.kakao.talk");
+
+                    if(timer_date_min % 5 == 0){
+                        let longshort_ratio_func_data = longshort_ratio_func();
+                        if(longshort_ratio_func_data != ""){
+                            Api.replyRoom("바이낸스 종합 시그널방", longshort_ratio_func_data, "com.kakao.talk");
+                            Api.replyRoom("차트갤러리 시그널방", longshort_ratio_func_data, "com.kakao.talk");
+                            //Api.replyRoom("코인선물의모든것", longshort_ratio_func_data, "com.kakao.talk");
+                            ///Api.replyRoom("홍범순", longshort_ratio_func(), "com.kakao.talk");
+                        }
                     }
 
                     if((timer_date_hour == 0 && timer_date_min == 45) || timer_date_hourmin == "845" || timer_date_hourmin == "1645"){
                         Api.replyRoom("바이낸스 종합 시그널방", Nearest_Funding_func(), "com.kakao.talk");
+                        Api.replyRoom("차트갤러리 시그널방", Nearest_Funding_func(), "com.kakao.talk");
+                        Api.replyRoom("코인선물의모든것", Nearest_Funding_func(), "com.kakao.talk");
                         //Api.replyRoom("홍범순", Nearest_Funding_func(), "com.kakao.talk");
                     }
                 }, 60000);
@@ -324,6 +303,7 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
                 Api.replyRoom("홍범순", "timerId가 이미 실행중", "com.kakao.talk");
             }
         }
+
 
         /*   타이머 종료   */
         if (dict_cmd[msg] == "/timerstop"){
@@ -582,20 +562,6 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName)
         }
 
 
-        /*   라프텔 애니검색   */
-        if(dict_cmd[str_split_Arr[0]] == "/라프텔 (애니제목)"){
-            try{
-                let laftel_search = laftel(splited_data);
-                let laftel_result = JSON.parse(laftel_search.text());
-                replier.reply(laftel_result);
-            }
-
-            catch(error){
-                replier.reply(error);
-            }
-
-        }
-
 
 
 
@@ -652,7 +618,7 @@ function dict_init(dict_nat, dict_cmd, dict_inc){
     
     dict_cmd["/테스트"] = dict_cmd["/test"] = dict_cmd["/tt"] = "/test";
     dict_cmd["/테스트2"] = dict_cmd["/test2"] = dict_cmd["/tt2"] = "/test2";
-    dict_cmd["/컴파일"] = dict_cmd["/compile"] = dict_cmd["/cc"] = "/compile";
+    dict_cmd["/컴파일"] = dict_cmd["/compile"] = "/compile";
     dict_cmd["/info"] = dict_cmd["/정보"] = dict_cmd["/상태"] = "/info";
     dict_cmd["/help"] = dict_cmd["/도움"] = dict_cmd["/명령어"] = "/help";
     dict_cmd["/time"] = dict_cmd["/시간"] = dict_cmd["/현재시간"] = dict_cmd["/현재시각"] = "/time";
@@ -804,59 +770,33 @@ function numberWithCommas(x) {
 /*   텔레그램 알림   */
 function onNotificationPosted(StatusBarNotification, sbn) {
 
-    //Device.acquireWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "wakelock kakao", -1);
+    try{
+        sbn.bindSession("org.telegram.messenger");
+        if (StatusBarNotification.getOpPkg()=="org.telegram.messenger"){
+            let tele_data = StatusBarNotification.getNotification().extras;
 
-    sbn.bindSession("org.telegram.messenger");
-    if (StatusBarNotification.getOpPkg()=="org.telegram.messenger"){
-        let tele_data = StatusBarNotification.getNotification().extras;
-
-        if (tele_data.getString("android.text") && !tele_data.getString("android.text").startsWith("대화방") && !tele_data.getString("android.text").includes("Killers")){
-            let tele_same_tmp = 0;
-            for (let i = 0; i < 100; i++){
-                if(tele_data.getString("android.text") == same_alarm[i]){
-                    tele_same_tmp = 1;
+            if (tele_data.getString("android.text") && !tele_data.getString("android.text").startsWith("대화방") && !tele_data.getString("android.text").includes("Killers")){
+                let tele_same_tmp = 0;
+                for (let i = 0; i < 150; i++){
+                    if(tele_data.getString("android.text") == same_alarm[i]){
+                        tele_same_tmp = 1;
+                    }
                 }
-            }
 
-            if(tele_same_tmp == 0){
-                //Api.replyRoom("홍범순", tele_data.getString("android.text"), "com.kakao.talk");
-                Api.replyRoom("바이낸스 종합 시그널방", tele_data.getString("android.text"), "com.kakao.talk");
-                same_alarm[same_alarm_idx] = tele_data.getString("android.text");
-                same_alarm_idx++;
-                same_alarm_idx = same_alarm_idx % 100;
+                if(tele_same_tmp == 0){
+                    //Api.replyRoom("홍범순", tele_data.getString("android.text"), "com.kakao.talk");
+                    Api.replyRoom("바이낸스 종합 시그널방", tele_data.getString("android.text"), "com.kakao.talk");
+                    Api.replyRoom("차트갤러리 시그널방", tele_data.getString("android.text"), "com.kakao.talk");
+                    same_alarm[same_alarm_idx] = tele_data.getString("android.text");
+                    same_alarm_idx++;
+                    same_alarm_idx = same_alarm_idx % 150;
+                }
             }
         }
     }
+    catch(error){
 
-
-    /*
-    sbn.bindSession("com.coinness");
-    if (StatusBarNotification.getOpPkg()=="com.coinness"){
-        let tele_data = StatusBarNotification.getNotification().extras;
-
-        if (tele_data.getString("android.text")){
-
-            let tele_same_tmp = 0;
-            for (let i = 0; i < 100; i++){
-                if(tele_data.getString("android.text") == same_alarm[i]){
-                    tele_same_tmp = 1;
-                }
-            }
-
-            if(tele_same_tmp == 0){
-                //Api.replyRoom("홍범순", tele_data.getString("android.text"), "com.kakao.talk");
-                Api.replyRoom("signalroom", tele_data.getString("android.text"), "com.kakao.talk");
-                same_alarm[same_alarm_idx] = tele_data.getString("android.text");
-                same_alarm_idx++;
-                same_alarm_idx = same_alarm_idx % 100;
-            }
-
-        }
     }
-    */
-
-    //Device.releaseWakeLock();
-
 
 }
 
@@ -871,87 +811,146 @@ function laftel(str) {
 
 /*   롱숏비율 함수   */
 function longshort_ratio_func(){
-    let output_text_return = "";
+    try{
+        let output_text_return = "";
 
-    let funding_history_raw = org.jsoup.Jsoup.connect("https://www.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=5m").ignoreContentType(true).get().text();
-    let funding_history_json = JSON.parse(funding_history_raw);
-    let sumOpenInterest = parseFloat(funding_history_json[29].sumOpenInterest).toFixed(3);
-    let sumOpenInterestValue = parseFloat(funding_history_json[29].sumOpenInterestValue).toFixed(2);
-    if (funding_history_before_btc == 0){
-        output_text_return += "미결제 약정\n" + sumOpenInterest + " BTC ( - )\n\n";
+        let funding_history_raw = org.jsoup.Jsoup.connect("https://www.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=5m").ignoreContentType(true).get().text();
+        let funding_history_json = JSON.parse(funding_history_raw);
+        let sumOpenInterest = parseFloat(funding_history_json[29].sumOpenInterest).toFixed(3);
+        let sumOpenInterestValue = parseFloat(funding_history_json[29].sumOpenInterestValue).toFixed(0);
+
+        if (funding_history_before_btc == 0){
+            output_text_return += "미결제 약정\n" + sumOpenInterest + " BTC ( - )\n\n";
+        }
+        else{
+            if(sumOpenInterest - funding_history_before_btc > 0){
+                output_text_return += "미결제 약정\n" + sumOpenInterest + " BTC (+" + ((sumOpenInterest - funding_history_before_btc).toFixed(3)).toString() + ")\n\n";
+            }
+            else{
+                output_text_return += "미결제 약정\n" + sumOpenInterest + " BTC (" + ((sumOpenInterest - funding_history_before_btc).toFixed(3)).toString() + ")\n\n";
+            }
+            
+        }
+
+        if (funding_history_before_usdt == 0){
+            output_text_return += "미결제 약정의 명목 가치\n" + numberWithCommas(sumOpenInterestValue)  + " USDT ( - )\n\n";
+        }
+        else{
+            if(sumOpenInterestValue - funding_history_before_usdt > 0){
+                output_text_return += "미결제 약정의 명목 가치\n" + numberWithCommas(sumOpenInterestValue)  + " USDT (+" + numberWithCommas(((sumOpenInterestValue - funding_history_before_usdt).toFixed(0)).toString()) + ")\n\n";
+            }
+            else{
+                output_text_return += "미결제 약정의 명목 가치\n" + numberWithCommas(sumOpenInterestValue)  + " USDT (" + numberWithCommas(((sumOpenInterestValue - funding_history_before_usdt).toFixed(0)).toString()) + ")\n\n";
+            }
+        }
+
+        if(sumOpenInterest == funding_history_before_btc){
+            output_text_return = "";
+            return output_text_return;
+        }
+
+
+        funding_history_before_btc = sumOpenInterest;
+        funding_history_before_usdt = sumOpenInterestValue;
+
+
+        let longshort_ratio_raw = org.jsoup.Jsoup.connect("https://www.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m").ignoreContentType(true).get().text();
+        let longshort_ratio_json = JSON.parse(longshort_ratio_raw);
+        let longshort_ratio_longAccount = (longshort_ratio_json[29].longAccount * 100);
+        let longshort_ratio_shortAccount = (longshort_ratio_json[29].shortAccount * 100);
+
+
+        
+        if(long_history_before_btc == 0){
+            output_text_return += "롱 계정 : " + (longshort_ratio_longAccount).toFixed(2) + "% ( - )\n";
+        }
+        else{
+            if(longshort_ratio_longAccount - long_history_before_btc > 0){
+                output_text_return += "롱 계정 : " + (longshort_ratio_longAccount).toFixed(2) + "% (+" + (longshort_ratio_longAccount - long_history_before_btc).toFixed(2) + ")\n";
+            }
+            else{
+                
+                output_text_return += "롱 계정 : " + (longshort_ratio_longAccount).toFixed(2) + "% (" + (longshort_ratio_longAccount - long_history_before_btc).toFixed(2) + ")\n";
+            }
+        }
+        
+        if(short_history_before_btc == 0){
+            output_text_return += "숏 계정 : " + (longshort_ratio_shortAccount).toFixed(2) + "% ( - )";
+        }
+        else{
+            if(longshort_ratio_shortAccount - short_history_before_btc > 0){
+                output_text_return += "숏 계정 : " + (longshort_ratio_shortAccount).toFixed(2) + "% (+" + (longshort_ratio_shortAccount - short_history_before_btc).toFixed(2) + ")";
+            }
+            else{
+                output_text_return += "숏 계정 : " + (longshort_ratio_shortAccount).toFixed(2) + "% (" + (longshort_ratio_shortAccount - short_history_before_btc).toFixed(2) + ")";
+            }
+        }
+        
+        long_history_before_btc = longshort_ratio_longAccount;
+        short_history_before_btc = longshort_ratio_shortAccount;
+
+        
+        return output_text_return;
     }
-    else{
-        output_text_return += "미결제 약정\n" + sumOpenInterest + " BTC (" + ((sumOpenInterest-funding_history_before_btc).toFixed(3)).toString() + ")\n\n";
+    catch(error){
+        return "Binance Long Short Ratio API Error";
     }
 
-    if (funding_history_before_usdt == 0){
-        output_text_return += "미결제 약정의 명목 가치\n" + sumOpenInterestValue  + " USDT ( - )\n\n";
-    }
-    else{
-        output_text_return += "미결제 약정의 명목 가치\n" + sumOpenInterestValue  + " USDT (" + ((sumOpenInterestValue-funding_history_before_usdt).toFixed(2)).toString() + ")\n\n";
-    }
-
-
-    funding_history_before_btc = sumOpenInterest;
-    funding_history_before_usdt = sumOpenInterestValue;
-
-
-    let longshort_ratio_raw = org.jsoup.Jsoup.connect("https://www.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m").ignoreContentType(true).get().text();
-    let longshort_ratio_json = JSON.parse(longshort_ratio_raw);
-    output_text_return += "롱 계정 : " + (longshort_ratio_json[29].longAccount * 100).toFixed(2) + "%\n";
-    output_text_return += "숏 계정 : " + (longshort_ratio_json[29].shortAccount * 100).toFixed(2) + "%";
-    
-    return output_text_return;
 }
 
 
 /*   펀비 함수   */
 function Nearest_Funding_func(){
-    let output_text_return = "";
+    try{
+        let output_text_return = "";
 
-    now = new Date();
-    now_Hour = now.getHours();
+        now = new Date();
+        now_Hour = now.getHours();
 
-    if(now_Hour >= 01 && now_Hour < 09){
-        Nearest_Funding_Time = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0, 0);
+        if(now_Hour >= 01 && now_Hour < 09){
+            Nearest_Funding_Time = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0, 0);
+        }
+
+        else if(now_Hour >= 09 && now_Hour < 17){
+            Nearest_Funding_Time = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
+        }
+
+        else{
+            Nearest_Funding_Time = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 1, 0, 0, 0);
+        }
+
+        Nearest_Funding_left_secs = Nearest_Funding_Time.getSeconds() - now.getSeconds();
+        Nearest_Funding_left_mins = Nearest_Funding_Time.getMinutes() - now.getMinutes();
+        Nearest_Funding_left_hour = Nearest_Funding_Time.getHours() - now.getHours();
+
+        if(Nearest_Funding_left_secs < 0){
+            Nearest_Funding_left_secs = Nearest_Funding_left_secs + 60;
+            Nearest_Funding_left_mins = Nearest_Funding_left_mins - 1;
+        }
+
+        if(Nearest_Funding_left_mins < 0){
+            Nearest_Funding_left_mins = Nearest_Funding_left_mins + 60;
+            Nearest_Funding_left_hour = Nearest_Funding_left_hour - 1;
+        }
+
+        if(Nearest_Funding_left_hour < 0){
+            Nearest_Funding_left_hour = Nearest_Funding_left_hour + 24;
+        }
+
+        output_text_return += "Next Funding : " + Nearest_Funding_Time.toTimeString() + "\n";
+        output_text_return += Nearest_Funding_left_hour + "시간 " + Nearest_Funding_left_mins + "분 " + Nearest_Funding_left_secs + "초 남았습니다\n\n";
+        
+        
+        let premiumIndex_raw = org.jsoup.Jsoup.connect("https://www.binance.com/fapi/v1/premiumIndex").ignoreContentType(true).get().text();
+        let premiumIndex_json = JSON.parse(premiumIndex_raw);
+
+        output_text_return += "[Funding Rate]\n";
+        for(let i=0;i<premiumIndex_json.length;i++){
+            output_text_return +=  premiumIndex_json[i].symbol + " : " + premiumIndex_json[i].lastFundingRate + "\n";
+        }
+        return output_text_return;
     }
-
-    else if(now_Hour >= 09 && now_Hour < 17){
-        Nearest_Funding_Time = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
+    catch(error){
+        return "Binance Funding API Error"
     }
-
-    else{
-        Nearest_Funding_Time = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 1, 0, 0, 0);
-    }
-
-    Nearest_Funding_left_secs = Nearest_Funding_Time.getSeconds() - now.getSeconds();
-    Nearest_Funding_left_mins = Nearest_Funding_Time.getMinutes() - now.getMinutes();
-    Nearest_Funding_left_hour = Nearest_Funding_Time.getHours() - now.getHours();
-
-    if(Nearest_Funding_left_secs < 0){
-        Nearest_Funding_left_secs = Nearest_Funding_left_secs + 60;
-        Nearest_Funding_left_mins = Nearest_Funding_left_mins - 1;
-    }
-
-    if(Nearest_Funding_left_mins < 0){
-        Nearest_Funding_left_mins = Nearest_Funding_left_mins + 60;
-        Nearest_Funding_left_hour = Nearest_Funding_left_hour - 1;
-    }
-
-    if(Nearest_Funding_left_hour < 0){
-        Nearest_Funding_left_hour = Nearest_Funding_left_hour + 24;
-    }
-
-    output_text_return += "Next Funding : " + Nearest_Funding_Time.toTimeString() + "\n";
-    output_text_return += Nearest_Funding_left_hour + "시간 " + Nearest_Funding_left_mins + "분 " + Nearest_Funding_left_secs + "초 남았습니다\n\n";
-    
-    
-    let premiumIndex_raw = org.jsoup.Jsoup.connect("https://www.binance.com/fapi/v1/premiumIndex").ignoreContentType(true).get().text();
-    let premiumIndex_json = JSON.parse(premiumIndex_raw);
-
-    output_text_return += "[Funding Rate]\n";
-    for(let i=0;i<premiumIndex_json.length;i++){
-        output_text_return +=  premiumIndex_json[i].symbol + " : " + premiumIndex_json[i].lastFundingRate + "\n";
-    }
-    return output_text_return;
 }
